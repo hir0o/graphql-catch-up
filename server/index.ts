@@ -14,12 +14,22 @@ type Label = {
   name: string;
 };
 
+type TodoFilter = {
+  title?: string;
+  done?: boolean;
+};
+
 const typeDefs = `#graphql
   type Todo {
     id: ID!
     title: String!
     done: Boolean!
     labels: [Label]!
+  }
+
+  input TodoFilter {
+    title: String
+    done: Boolean
   }
 
   type Label {
@@ -30,6 +40,7 @@ const typeDefs = `#graphql
   type Query {
     getTodoList: [Todo!]!
     getTodo(id: ID!): Todo!
+    getFilterdTodoList(filter: TodoFilter): [Todo!]!
   }
 
   type Mutation {
@@ -57,14 +68,14 @@ let todoList = [
   },
   {
     id: genId(),
-    title: "GraphQLの本を読む",
+    title: "TypeScriptの本を読む",
     done: false,
     labelIds: [labels[0].id, labels[1].id],
   },
   {
     id: genId(),
-    title: "GraphQLの本を読む",
-    done: false,
+    title: "お散歩する",
+    done: true,
   },
 ];
 
@@ -98,6 +109,24 @@ const resolvers = {
         ...todo,
         labels: findLabelList(todo),
       };
+    },
+    getFilterdTodoList: (parent: any, args: { filter: TodoFilter }) => {
+      const { filter } = args;
+      return todoList
+        .filter((todo) => {
+          if (filter.title !== undefined && !todo.title.includes(filter.title))
+            return false;
+          if (filter.done !== undefined && filter.done !== todo.done)
+            return false;
+          return true;
+        })
+        .map((todo) => {
+          const label = findLabelList(todo);
+          return {
+            ...todo,
+            labels: label ?? [],
+          };
+        });
     },
   },
   Mutation: {

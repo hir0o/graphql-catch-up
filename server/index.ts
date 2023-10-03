@@ -38,7 +38,7 @@ const typeDefs = `#graphql
   }
 
   type Query {
-    getTodoList: [Todo!]!
+    todos: [Todo]
     getTodo(id: ID!): Todo!
     getFilterdTodoList(filter: TodoFilter): [Todo!]!
   }
@@ -92,23 +92,21 @@ const findLabelList = (todo: Todo): Label[] => {
 
 const resolvers = {
   Query: {
-    getTodoList: () => {
-      return todoList.map((todo) => {
-        const label = findLabelList(todo);
-        return {
-          ...todo,
-          labels: label,
-        };
-      });
+    todos: () => {
+      return todoList;
+      // return todoList.map((todo) => {
+      //   const label = findLabelList(todo);
+      //   return {
+      //     ...todo,
+      //     labels: label,
+      //   };
+      // });
     },
     getTodo: (parent: any, args: { id: string }) => {
       const { id } = args;
       const todo = todoList.find((todo) => todo.id === id);
       if (!todo) throw new Error("Todo not found");
-      return {
-        ...todo,
-        labels: findLabelList(todo),
-      };
+      return todo;
     },
     getFilterdTodoList: (parent: any, args: { filter: TodoFilter }) => {
       const { filter } = args;
@@ -127,6 +125,11 @@ const resolvers = {
             labels: label ?? [],
           };
         });
+    },
+  },
+  Todo: {
+    labels: (parent: Todo) => {
+      return findLabelList(parent);
     },
   },
   Mutation: {

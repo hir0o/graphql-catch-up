@@ -1,34 +1,63 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import './App.css'
+import { FC, PropsWithChildren, useState } from "react";
+import {
+  ApolloClient,
+  InMemoryCache,
+  ApolloProvider,
+  gql,
+  useQuery,
+} from "@apollo/client";
+import "./App.css";
+import {
+  GetTodoDocument,
+  GetTodoListDocument,
+  Todo,
+} from "../generated/graphql";
 
-function App() {
-  const [count, setCount] = useState(0)
+const client = new ApolloClient({
+  uri: "http://localhost:4000",
+  cache: new InMemoryCache(),
+});
 
+const Provider: FC<PropsWithChildren> = ({ children }) => {
   return (
-    <div className="App">
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src="/vite.svg" className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://reactjs.org" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </div>
-  )
-}
+    <ApolloProvider client={client}>
+      <div className="App">{children}</div>
+    </ApolloProvider>
+  );
+};
 
-export default App
+const Todo: FC<{ todo: Todo }> = ({ todo }) => {
+  return (
+    <li>
+      <div>
+        <span>{todo.title}</span>
+        <span>{todo.done ? "完了" : "未完了"}</span>
+      </div>
+    </li>
+  );
+};
+
+const TodoList: FC = () => {
+  const { data } = useQuery(GetTodoListDocument);
+  return (
+    <ul>
+      {data?.todos
+        ?.filter((todo): todo is Todo => todo !== null)
+        .map((todo) => (
+          <li key={todo.id}>
+            <Todo todo={todo} />
+          </li>
+        ))}
+    </ul>
+  );
+};
+
+const App: FC = () => {
+  return (
+    <Provider>
+      <TodoList />
+    </Provider>
+  );
+};
+
+export default App;

@@ -1,0 +1,44 @@
+mutation AddTodo($title: String!) {
+  addTodo(title: $title) {
+    id
+    title
+    done
+  }
+}
+
+query GetTodoList {
+  todos {
+    title
+    id
+    done
+  }
+}
+
+query GetTodo($getTodoId: ID!) {
+  getTodo(id: $getTodoId) {
+    title
+  }
+}
+
+query GetFilterdTodoList($filter: TodoFilter) {
+  getFilterdTodoList(filter: $filter) {
+    title
+  }
+}
+
+query GetFilterdtodo {
+  done: getFilterdTodoList(filter: { done: true }) {
+    title
+    labels {
+      name
+    }
+  }
+  yet: getFilterdTodoList(filter: { done: false }) {
+    title
+    id
+    labels {
+      id
+      name
+    }
+  }
+}

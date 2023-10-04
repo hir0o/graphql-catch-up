@@ -1,6 +1,8 @@
 import { ApolloServer } from "@apollo/server";
 import { startStandaloneServer } from "@apollo/server/standalone";
 import { genId } from "./utils";
+import { readFileSync } from 'fs'
+import path from 'path'
 
 type Todo = {
   id: string;
@@ -19,34 +21,11 @@ type TodoFilter = {
   done?: boolean;
 };
 
-const typeDefs = `#graphql
-  type Todo {
-    id: ID!
-    title: String!
-    done: Boolean!
-    labels: [Label]!
-  }
+const schemaPath = path.resolve(__dirname, './schema.graphql')
 
-  input TodoFilter {
-    title: String
-    done: Boolean
-  }
-
-  type Label {
-    id: ID!
-    name: String!
-  }
-
-  type Query {
-    todos: [Todo]
-    getTodo(id: ID!): Todo!
-    getFilterdTodoList(filter: TodoFilter): [Todo!]!
-  }
-
-  type Mutation {
-    addTodo(title: String!): Todo!
-  }
-`;
+const typeDefs = readFileSync(schemaPath, {
+  encoding: 'utf8'
+})
 
 let labels = [
   {

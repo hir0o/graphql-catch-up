@@ -1,0 +1,26 @@
+  type Todo {
+    id: ID!
+    title: String!
+    done: Boolean!
+    labels: [Label]!
+  }
+
+  input TodoFilter {
+    title: String
+    done: Boolean
+  }
+
+  type Label {
+    id: ID!
+    name: String!
+  }
+
+  type Query {
+    todos: [Todo]
+    getTodo(id: ID!): Todo!
+    getFilterdTodoList(filter: TodoFilter): [Todo!]!
+  }
+
+  type Mutation {
+    addTodo(title: String!): Todo!
+  }

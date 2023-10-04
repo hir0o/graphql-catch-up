@@ -2,7 +2,40 @@ import { ApolloServer } from "@apollo/server";
 import { startStandaloneServer } from "@apollo/server/standalone";
 import { genId } from "./utils";
 import { readFileSync } from "fs";
+import * as R from "remeda";
 import path from "path";
+
+const sampleTaskTitle = [
+  "ミルクを買う",
+  "猫の餌を注文する",
+  "医者の予約を取る",
+  "宿題を提出する",
+  "洗濯物を干す",
+  "親に電話する",
+  "図書館で本を返す",
+  "運転免許更新の手続きをする",
+  "水植物の水を変える",
+  "ジムに行く",
+  "旅行の予約をする",
+  "車のオイル交換をする",
+  "誕生日プレゼントを選ぶ",
+  "新しい靴を買う",
+  "食材の買い出しをする",
+];
+
+const sampleLabelName = [
+  "家事",
+  "仕事",
+  "勉強",
+  "買い物",
+  "運動",
+  "趣味",
+  "家族",
+  "友達",
+  "健康",
+  "お金",
+  "その他",
+];
 
 type Todo = {
   id: string;
@@ -27,83 +60,60 @@ const typeDefs = readFileSync(schemaPath, {
   encoding: "utf8",
 });
 
-let labels = [
-  {
-    id: genId(),
-    name: "GraphQL",
-  },
-  {
-    id: genId(),
-    name: "TypeScript",
-  },
-];
+let labels = R.range(0, 10).map((i) => ({
+  id: genId(),
+  name: R.sample(sampleLabelName, 1)[0],
+}));
 
-let todoList = [
-  {
-    id: genId(),
-    title: "GraphQLの本を読む",
-    done: false,
-    labelIds: [labels[0].id],
-  },
-  {
-    id: genId(),
-    title: "TypeScriptの本を読む",
-    done: false,
-    labelIds: [labels[0].id, labels[1].id],
-  },
-  {
-    id: genId(),
-    title: "お散歩する",
-    done: true,
-  },
-];
+let todoList = R.range(0, 10).map((i) => ({
+  id: genId(),
+  title: R.sample(sampleTaskTitle, 1)[0] as string,
+  done: R.sample([true, false], 1)[0],
+  labelIds: R.sample(labels, 3).map((label) => label.id),
+}));
 
 const findLabelList = (todo: Todo): Label[] => {
-  return (
-    todo.labelIds
-      ?.map((labelId) => {
-        const res = labels.find((label) => label.id === labelId);
-        return res;
-      })
-      .filter((label): label is Label => !!label) ?? []
+  return R.pipe(
+    todo.labelIds ?? [],
+    R.map((labelId) => R.find(labels, (label) => label.id === labelId)),
+    R.filter((label): label is Label => R.isDefined(label))
   );
+};
+
+const filterByTitle = (title?: string) => (todoList: Todo[]) => {
+  return R.isDefined(title)
+    ? R.filter(todoList, (todo) => todo.title.includes(title))
+    : todoList;
+};
+
+const filterByDone = (done?: boolean) => (todoList: Todo[]) => {
+  return R.isDefined(done)
+    ? R.filter(todoList, (todo) => todo.done === done)
+    : todoList;
 };
 
 const resolvers = {
   Query: {
     todos: () => {
       return todoList;
-      // return todoList.map((todo) => {
-      //   const label = findLabelList(todo);
-      //   return {
-      //     ...todo,
-      //     labels: label,
-      //   };
-      // });
     },
     getTodo: (parent: any, args: { id: string }) => {
       const { id } = args;
-      const todo = todoList.find((todo) => todo.id === id);
+      const todo = R.find(todoList, (todo) => todo.id === id);
       if (!todo) throw new Error("Todo not found");
       return todo;
     },
     getFilterdTodoList: (parent: any, args: { filter: TodoFilter }) => {
       const { filter } = args;
-      return todoList
-        .filter((todo) => {
-          if (filter.title !== undefined && !todo.title.includes(filter.title))
-            return false;
-          if (filter.done !== undefined && filter.done !== todo.done)
-            return false;
-          return true;
-        })
-        .map((todo) => {
-          const label = findLabelList(todo);
-          return {
-            ...todo,
-            labels: label ?? [],
-          };
-        });
+      return R.pipe(
+        todoList,
+        filterByTitle(filter.title),
+        filterByDone(filter.done),
+        R.map((todo) => ({
+          ...todo,
+          labels: findLabelList(todo),
+        }))
+      );
     },
   },
   Todo: {

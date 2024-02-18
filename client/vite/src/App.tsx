@@ -3,15 +3,57 @@ import {
   ApolloClient,
   InMemoryCache,
   ApolloProvider,
-  gql,
-  useQuery,
+  useSuspenseQuery,
 } from "@apollo/client";
 import "./App.css";
+import { GetTodoListDocument, Todo } from "../generated/graphql";
 import {
-  GetTodoDocument,
-  GetTodoListDocument,
-  Todo,
-} from "../generated/graphql";
+  BrowserRouter,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
+
+const Todo: FC<{ todo: Todo }> = ({ todo }) => {
+  return (
+    <li>
+      <div>
+        <span>{todo.title}</span>
+        <span>{todo.done ? "完了" : "未完了"}</span>
+      </div>
+    </li>
+  );
+};
+
+const TodoList: FC = () => {
+  const { data } = useSuspenseQuery(GetTodoListDocument, {
+    fetchPolicy: "network-only",
+  });
+  const navigate = useNavigate();
+  return (
+    <div>
+      <button onClick={() => navigate("/about")}>about</button>
+      <ul>
+        {data.todos.map((todo) => (
+          <li key={todo.id}>
+            <Todo todo={todo} />
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+};
+
+const About = () => {
+  const navigate = useNavigate();
+  return (
+    <div>
+      <button onClick={() => navigate("/")}>home</button>
+      <div>about</div>
+    </div>
+  );
+};
 
 const client = new ApolloClient({
   uri: "http://localhost:4000",
@@ -26,37 +68,22 @@ const Provider: FC<PropsWithChildren> = ({ children }) => {
   );
 };
 
-const Todo: FC<{ todo: Todo }> = ({ todo }) => {
+const Router = () => {
   return (
-    <li>
-      <div>
-        <span>{todo.title}</span>
-        <span>{todo.done ? "完了" : "未完了"}</span>
-      </div>
-    </li>
-  );
-};
-
-const TodoList: FC = () => {
-  const { data } = useQuery(GetTodoListDocument);
-  return (
-    <ul>
-      {data?.todos
-        ?.filter((todo): todo is Todo => todo !== null)
-        .map((todo) => (
-          <li key={todo.id}>
-            <Todo todo={todo} />
-          </li>
-        ))}
-    </ul>
+    <Route path="/">
+      <Route index element={<TodoList />} />
+      <Route path="/about" element={<About />} />
+    </Route>
   );
 };
 
 const App: FC = () => {
   return (
-    <Provider>
-      <TodoList />
-    </Provider>
+    <BrowserRouter>
+      <Provider>
+        <Router />
+      </Provider>
+    </BrowserRouter>
   );
 };
 

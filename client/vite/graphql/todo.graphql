@@ -11,6 +11,10 @@ query GetTodoList {
     title
     id
     done
+    labels {
+      id
+      name
+    }
   }
 }
 

@@ -94,7 +94,8 @@ const filterByDone = (done?: boolean) => (todoList: Todo[]) => {
 
 const resolvers = {
   Query: {
-    todos: () => {
+    todos: async () => {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       return todoList;
     },
     getTodo: (parent: any, args: { id: string }) => {
